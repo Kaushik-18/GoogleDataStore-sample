@@ -21,7 +21,7 @@ public class EmployeeServlet extends HttpServlet {
         int id = NetworkHelper.readUrlValues(req.getRequestURL().toString(), "employee");
 
         if (id != NetworkHelper.URL_FIND_ALL) {
-            String response = EmployeeDataStoreHelper.getInstance().retrieveEmployeeEntity(id);
+            String response = EmployeeDataStoreHelper.getInstance().retrieveEmployeeEntity(id,req.getContentType());
             if (response != null) {
                 resp.setStatus(HttpServletResponse.SC_OK);
                 resp.getWriter().println(response);
@@ -30,12 +30,13 @@ public class EmployeeServlet extends HttpServlet {
                 resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
             }
         } else {
-            String employeelist = EmployeeDataStoreHelper.getInstance().getAllEmployees();
+            String employeelist = EmployeeDataStoreHelper.getInstance().getAllEmployees(req.getContentType());
             if (employeelist != null) {
                 resp.setStatus(HttpServletResponse.SC_OK);
                 resp.getWriter().println(employeelist);
             } else {
                 resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                resp.getWriter().println("No employees");
             }
         }
     }
@@ -57,7 +58,7 @@ public class EmployeeServlet extends HttpServlet {
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         int id = NetworkHelper.readUrlValues(req.getRequestURL().toString(), "employee");
         String request = NetworkHelper.readRequest(req);
-        int status = EmployeeDataStoreHelper.getInstance().updateEmployeeEntity(id, request,req.getContentType());
+        int status = EmployeeDataStoreHelper.getInstance().updateEmployeeEntity(id, request);
         resp.setStatus(status);
         resp.setHeader("Location", req.getServletPath());
     }

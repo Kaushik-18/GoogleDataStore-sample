@@ -10,6 +10,7 @@ import org.xml.sax.SAXException;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -31,10 +32,15 @@ public class ProjectDataStoreHelper {
         return _projectHelper;
     }
 
-    String getProjectEntity(int id) {
+    String getProjectEntity(int id, String contentType) {
         Key projectKey = KeyFactory.createKey("Project", id);
         try {
             Entity projectEntity = _projectDatastore.get(projectKey);
+            if ("application/xml".equalsIgnoreCase(contentType)) {
+                ArrayList<Entity> entities = new ArrayList<>();
+                entities.add(projectEntity);
+                return NetworkHelper.createProjectXML(entities);
+            }
             return NetworkHelper.generateProjectJsonResponse(projectEntity).toString();
         } catch (EntityNotFoundException e) {
             e.printStackTrace();
@@ -42,10 +48,13 @@ public class ProjectDataStoreHelper {
         return null;
     }
 
-    String getAllProjects() {
+    String getAllProjects(String contentType) {
         Query allProjectQuery = new Query("Project");
         List<Entity> projectist = _projectDatastore.prepare(allProjectQuery).asList(FetchOptions.Builder.withDefaults());
         if (projectist != null && projectist.size() > 0) {
+            if ("application/xml".equalsIgnoreCase(contentType)) {
+                return NetworkHelper.createProjectXML(projectist);
+            }
             JSONArray array = new JSONArray();
             for (Entity entity : projectist) {
                 array.put(NetworkHelper.generateProjectJsonResponse(entity));
@@ -55,7 +64,9 @@ public class ProjectDataStoreHelper {
         return null;
     }
 
-    int addProjectEntity(String data, String contentType) throws JSONException, IOException, SAXException, ParserConfigurationException {
+    int addProjectEntity(String data, String contentType) throws JSONException, IOException,
+            SAXException,
+            ParserConfigurationException {
         Project project = null;
         if ("application/xml".equalsIgnoreCase(contentType)) {
             project = NetworkHelper.readProjectFromXML(data);

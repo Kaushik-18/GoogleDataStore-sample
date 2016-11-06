@@ -68,10 +68,15 @@ public class EmployeeDataStoreHelper {
         return HttpServletResponse.SC_BAD_REQUEST;
     }
 
-    String retrieveEmployeeEntity(int id) {
+    String retrieveEmployeeEntity(int id, String contentType) {
         Key employeeKey = KeyFactory.createKey("Employee", id);
         try {
             Entity employeeEntity = datastore.get(employeeKey);
+            if ("application/xml".equalsIgnoreCase(contentType)) {
+                ArrayList<Entity> entities = new ArrayList<>();
+                entities.add(employeeEntity);
+                return NetworkHelper.createEmployeeXML(entities);
+            }
             return NetworkHelper.generateEmployeeJsonResponse(employeeEntity).toString();
         } catch (EntityNotFoundException e) {
             return null;
@@ -115,10 +120,15 @@ public class EmployeeDataStoreHelper {
     }
 
 
-    String getAllEmployees() {
+    String getAllEmployees(String contentType) {
         Query allEmployeeQuery = new Query("Employee");
         List<Entity> employeeList = datastore.prepare(allEmployeeQuery).asList(FetchOptions.Builder.withDefaults());
         if (employeeList != null && employeeList.size() > 0) {
+
+            if("application/xml".equalsIgnoreCase(contentType)){
+                return NetworkHelper.createEmployeeXML(employeeList);
+            }
+
             JSONArray array = new JSONArray();
             for (Entity entity : employeeList) {
                 array.put(NetworkHelper.generateEmployeeJsonResponse(entity));

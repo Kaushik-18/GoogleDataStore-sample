@@ -20,7 +20,7 @@ public class ProjectServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         int id = NetworkHelper.readUrlValues(req.getRequestURL().toString(), "project");
         if (id > NetworkHelper.URL_FIND_ALL) {
-            String project = ProjectDataStoreHelper.getInstance().getProjectEntity(id);
+            String project = ProjectDataStoreHelper.getInstance().getProjectEntity(id,req.getContentType());
             if (project != null) {
                 resp.setStatus(HttpServletResponse.SC_OK);
                 resp.getWriter().println(project);
@@ -29,19 +29,20 @@ public class ProjectServlet extends HttpServlet {
             }
 
         } else {
-            String projectlist = ProjectDataStoreHelper.getInstance().getAllProjects();
+            String projectlist = ProjectDataStoreHelper.getInstance().getAllProjects(req.getContentType());
             if (projectlist != null) {
                 resp.setStatus(HttpServletResponse.SC_OK);
                 resp.getWriter().println(projectlist);
             } else {
                 resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                resp.getWriter().println("No projects");
             }
         }
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        int responseCode = HttpServletResponse.SC_CREATED;
+        int responseCode ;
         try {
             String request = NetworkHelper.readRequest(req);
             responseCode = ProjectDataStoreHelper.getInstance().addProjectEntity(request,req.getContentType());
