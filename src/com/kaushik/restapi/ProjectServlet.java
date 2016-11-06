@@ -2,11 +2,13 @@ package com.kaushik.restapi;
 
 import com.google.appengine.labs.repackaged.org.json.JSONException;
 import com.kaushik.restapi.dataobject.Project;
+import org.xml.sax.SAXException;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 
 /**
@@ -42,8 +44,8 @@ public class ProjectServlet extends HttpServlet {
         int responseCode = HttpServletResponse.SC_CREATED;
         try {
             String request = NetworkHelper.readRequest(req);
-            ProjectDataStoreHelper.getInstance().addProjectEntity(request);
-        } catch (JSONException e) {
+            responseCode = ProjectDataStoreHelper.getInstance().addProjectEntity(request,req.getContentType());
+        } catch (JSONException | SAXException | ParserConfigurationException e) {
             responseCode = HttpServletResponse.SC_CONFLICT;
         }
         resp.setStatus(responseCode);

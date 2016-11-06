@@ -5,8 +5,11 @@ import com.google.appengine.labs.repackaged.org.json.JSONArray;
 import com.google.appengine.labs.repackaged.org.json.JSONException;
 import com.google.appengine.labs.repackaged.org.json.JSONObject;
 import com.kaushik.restapi.dataobject.Project;
+import org.xml.sax.SAXException;
 
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -19,7 +22,7 @@ public class ProjectDataStoreHelper {
     }
 
     private static ProjectDataStoreHelper _projectHelper;
-    private DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+    private DatastoreService _projectDatastore = DatastoreServiceFactory.getDatastoreService();
 
     public static ProjectDataStoreHelper getInstance() {
         if (_projectHelper == null) {
@@ -31,7 +34,7 @@ public class ProjectDataStoreHelper {
     String getProjectEntity(int id) {
         Key projectKey = KeyFactory.createKey("Project", id);
         try {
-            Entity projectEntity = datastore.get(projectKey);
+            Entity projectEntity = _projectDatastore.get(projectKey);
             return NetworkHelper.generateProjectJsonResponse(projectEntity).toString();
         } catch (EntityNotFoundException e) {
             e.printStackTrace();
@@ -41,7 +44,7 @@ public class ProjectDataStoreHelper {
 
     String getAllProjects() {
         Query allProjectQuery = new Query("Project");
-        List<Entity> projectist = datastore.prepare(allProjectQuery).asList(FetchOptions.Builder.withDefaults());
+        List<Entity> projectist = _projectDatastore.prepare(allProjectQuery).asList(FetchOptions.Builder.withDefaults());
         if (projectist != null && projectist.size() > 0) {
             JSONArray array = new JSONArray();
             for (Entity entity : projectist) {
@@ -52,18 +55,34 @@ public class ProjectDataStoreHelper {
         return null;
     }
 
-    void addProjectEntity(String data) throws JSONException {
-        Project project = new Project(new JSONObject(data));
+    int addProjectEntity(String data, String contentType) throws JSONException, IOException, SAXException, ParserConfigurationException {
+        Project project = null;
+        if ("application/xml".equalsIgnoreCase(contentType)) {
+            project = NetworkHelper.readProjectFromXML(data);
+        } else {
+            project = new Project(new JSONObject(data));
+        }
+
+        Key projectKey = KeyFactory.createKey("Project", project.getId());
+        try {
+            Entity existingProject = _projectDatastore.get(projectKey);
+            if (existingProject != null) {
+                return HttpServletResponse.SC_CONFLICT;
+            }
+        } catch (EntityNotFoundException e) {
+            e.printStackTrace();
+        }
         Entity entity = new Entity("Project", project.getId());
         entity.setProperty("name", project.getName());
         entity.setProperty("budget", project.getBudget());
-        datastore.put(entity);
+        _projectDatastore.put(entity);
+        return HttpServletResponse.SC_CREATED;
     }
 
     int updateProjectEntity(int id, String updateData) {
         Key projectKey = KeyFactory.createKey("Project", id);
         try {
-            Entity existingProject = datastore.get(projectKey);
+            Entity existingProject = _projectDatastore.get(projectKey);
             JSONObject updateJson = new JSONObject(updateData);
             if (updateJson.has("name")) {
                 existingProject.setProperty("name", updateJson.optString("name"));
@@ -71,7 +90,7 @@ public class ProjectDataStoreHelper {
             if (updateJson.has("budget")) {
                 existingProject.setProperty("lastName", updateJson.optDouble("budget"));
             }
-            datastore.put(existingProject);
+            _projectDatastore.put(existingProject);
             return HttpServletResponse.SC_OK;
 
         } catch (EntityNotFoundException e) {
@@ -85,8 +104,8 @@ public class ProjectDataStoreHelper {
     int deleteProjectEntity(int id) {
         Key projectKey = KeyFactory.createKey("Project", id);
         try {
-            datastore.get(projectKey);
-            datastore.delete(projectKey);
+            _projectDatastore.get(projectKey);
+            _projectDatastore.delete(projectKey);
             return HttpServletResponse.SC_OK;
 
         } catch (EntityNotFoundException e) {

@@ -1,13 +1,13 @@
 package com.kaushik.restapi;
 
 import com.google.appengine.labs.repackaged.org.json.JSONException;
-import com.google.appengine.labs.repackaged.org.json.JSONObject;
-import com.kaushik.restapi.dataobject.Employee;
+import org.xml.sax.SAXException;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 
 /**
@@ -19,6 +19,7 @@ public class EmployeeServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
         int id = NetworkHelper.readUrlValues(req.getRequestURL().toString(), "employee");
+
         if (id != NetworkHelper.URL_FIND_ALL) {
             String response = EmployeeDataStoreHelper.getInstance().retrieveEmployeeEntity(id);
             if (response != null) {
@@ -41,12 +42,12 @@ public class EmployeeServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        int responseCode = HttpServletResponse.SC_CREATED;
+        int responseCode;
         try {
             String request = NetworkHelper.readRequest(req);
-            EmployeeDataStoreHelper.getInstance().addEmployeeEntity(request);
-        } catch (JSONException e) {
-            responseCode = 409;
+            responseCode = EmployeeDataStoreHelper.getInstance().addEmployeeEntity(request, req.getContentType());
+        } catch (JSONException | ParserConfigurationException | SAXException e) {
+            responseCode = HttpServletResponse.SC_BAD_REQUEST;
         }
         resp.setStatus(responseCode);
         resp.setHeader("Location", req.getServletPath());
@@ -56,7 +57,7 @@ public class EmployeeServlet extends HttpServlet {
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         int id = NetworkHelper.readUrlValues(req.getRequestURL().toString(), "employee");
         String request = NetworkHelper.readRequest(req);
-        int status = EmployeeDataStoreHelper.getInstance().updateEmployeeEntity(id, request);
+        int status = EmployeeDataStoreHelper.getInstance().updateEmployeeEntity(id, request,req.getContentType());
         resp.setStatus(status);
         resp.setHeader("Location", req.getServletPath());
     }

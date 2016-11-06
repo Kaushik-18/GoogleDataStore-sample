@@ -6,8 +6,11 @@ import com.google.appengine.labs.repackaged.org.json.JSONArray;
 import com.google.appengine.labs.repackaged.org.json.JSONException;
 import com.google.appengine.labs.repackaged.org.json.JSONObject;
 import com.kaushik.restapi.dataobject.Employee;
+import org.xml.sax.SAXException;
 
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,12 +36,36 @@ public class EmployeeDataStoreHelper {
         return _helper;
     }
 
-    public void addEmployeeEntity(String data) throws JSONException {
-        Employee employee  = new Employee(new JSONObject(data));
-        Entity entity = new Entity("Employee", employee.getId());
-        entity.setProperty("firstName", employee.getFirstName());
-        entity.setProperty("lastName", employee.getLastName());
-        datastore.put(entity);
+    public int addEmployeeEntity(String data, String contentType) throws JSONException,
+            IOException,
+            SAXException,
+            ParserConfigurationException {
+
+        Employee employee = null;
+        if ("application/xml".equalsIgnoreCase(contentType)) {
+            employee = NetworkHelper.readEmployeeFromXML(data);
+        } else {
+            employee = new Employee(new JSONObject(data));
+        }
+
+        Key employeeKey = KeyFactory.createKey("Employee", employee.getId());
+        try {
+            Entity existingEmployee = datastore.get(employeeKey);
+            if (existingEmployee != null) {
+                return HttpServletResponse.SC_CONFLICT;
+            }
+        } catch (EntityNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        if (employee != null) {
+            Entity entity = new Entity("Employee", employee.getId());
+            entity.setProperty("firstName", employee.getFirstName());
+            entity.setProperty("lastName", employee.getLastName());
+            datastore.put(entity);
+            return HttpServletResponse.SC_CREATED;
+        }
+        return HttpServletResponse.SC_BAD_REQUEST;
     }
 
     String retrieveEmployeeEntity(int id) {
@@ -63,6 +90,7 @@ public class EmployeeDataStoreHelper {
             if (updateJson.has("lastName")) {
                 existingEmployee.setProperty("lastName", updateJson.opt("lastName"));
             }
+
             datastore.put(existingEmployee);
             return HttpServletResponse.SC_OK;
 
