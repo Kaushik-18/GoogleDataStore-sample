@@ -22,7 +22,7 @@
 
     <servlet-mapping>
         <servlet-name>Project</servlet-name>
-        <url-pattern>/cmpe281-kaushik-924/rest/project</url-pattern>
+        <url-pattern>/cmpe281-kaushik-924/rest/project/*</url-pattern>
     </servlet-mapping>
 
 

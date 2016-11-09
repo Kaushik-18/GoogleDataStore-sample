@@ -9,11 +9,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
+import java.util.logging.Logger;
 
 /**
  * Created by kaushik on 29/10/16.
  */
 public class EmployeeServlet extends HttpServlet {
+
+    private static final Logger log = Logger.getLogger(EmployeeServlet.class.getName());
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -21,6 +24,7 @@ public class EmployeeServlet extends HttpServlet {
         int id = NetworkHelper.readUrlValues(req.getRequestURL().toString(), "employee");
 
         if (id != NetworkHelper.URL_FIND_ALL) {
+            log.info("getting employee to datastore");
             String response = EmployeeDataStoreHelper.getInstance().retrieveEmployeeEntity(id,req.getContentType());
             if (response != null) {
                 resp.setStatus(HttpServletResponse.SC_OK);
@@ -30,6 +34,7 @@ public class EmployeeServlet extends HttpServlet {
                 resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
             }
         } else {
+            log.info("getting employees to datastore");
             String employeelist = EmployeeDataStoreHelper.getInstance().getAllEmployees(req.getContentType());
             if (employeelist != null) {
                 resp.setStatus(HttpServletResponse.SC_OK);
@@ -45,6 +50,7 @@ public class EmployeeServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         int responseCode;
         try {
+            log.info("adding employee to datastore");
             String request = NetworkHelper.readRequest(req);
             responseCode = EmployeeDataStoreHelper.getInstance().addEmployeeEntity(request, req.getContentType());
         } catch (JSONException | ParserConfigurationException | SAXException e) {
@@ -56,6 +62,7 @@ public class EmployeeServlet extends HttpServlet {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        log.info("updating employee to datastore");
         int id = NetworkHelper.readUrlValues(req.getRequestURL().toString(), "employee");
         String request = NetworkHelper.readRequest(req);
         int status = EmployeeDataStoreHelper.getInstance().updateEmployeeEntity(id, request);
